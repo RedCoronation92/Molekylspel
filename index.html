@@ -202,12 +202,29 @@ function getPointer(event){
 
 function pointerDown(event){
 
+    console.log("pointerDown körs");
+
     getPointer(event);
 
     raycaster.setFromCamera(
         mouse,
         camera
     );
+
+    const hit =
+    raycaster.intersectObjects(atoms);
+
+    console.log("träffar:",hit.length);
+
+    if(hit.length){
+
+        console.log("Atom vald");
+
+        selected = hit[0].object;
+
+        controls.enabled = false;
+    }
+}
 
     const hit =
     raycaster.intersectObjects(atoms);
