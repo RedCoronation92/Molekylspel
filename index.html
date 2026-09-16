@@ -1,669 +1,145 @@
 <!DOCTYPE html>
-2
 <html lang="sv">
-3
 <head>
-4
 <meta charset="UTF-8">
-5
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-6
-<title>Bygg Molekylen</title>
-7
- 
-8
+<title>Molekylspel</title>
 <style>
-9
 body{
-10
-margin:0;
-11
-font-family:Arial,sans-serif;
-12
-background:#111;
-13
-color:white;
-14
-overflow:hidden;
-15
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#111;
+  color:white;
+  overflow:hidden;
 }
-16
- 
-17
 #ui{
-18
-position:absolute;
-19
-top:10px;
-20
-left:10px;
-21
-z-index:100;
-22
-background:rgba(0,0,0,0.85);
-23
-padding:15px;
-24
-border-radius:12px;
-25
-width:min(320px,90vw);
-26
+  position:absolute;
+  top:10px;
+  left:10px;
+  z-index:10;
+  background:rgba(0,0,0,.85);
+  padding:15px;
+  border-radius:12px;
+  width:min(320px,90vw);
 }
-27
- 
-28
 button{
-29
-width:100%;
-30
-margin:5px 0;
-31
-padding:12px;
-32
-border:none;
-33
-border-radius:8px;
-34
-font-size:16px;
-35
-cursor:pointer;
-36
+  width:100%;
+  padding:12px;
+  margin:5px 0;
+  border:none;
+  border-radius:8px;
 }
-37
- 
-38
-#message{
-39
-margin-top:10px;
-40
-font-weight:bold;
-41
-}
-42
- 
-43
-#score{
-44
-color:#00ff99;
-45
-font-weight:bold;
-46
-}
-47
- 
-48
-canvas{
-49
-touch-action:none;
-50
-}
-51
+#score{color:#00ff99;font-weight:bold}
 </style>
-52
 </head>
-53
- 
-54
 <body>
-55
- 
-56
 <div id="ui">
-57
- 
-58
-<h2>🧪 Bygg Molekylen</h2>
-59
- 
-60
-<p>
-61
-Formel:
-62
-<strong id="formula"></strong>
-63
-</p>
-64
- 
-65
-<p>
-66
-Poäng:
-67
-<span id="score">0</span>
-68
-</p>
-69
- 
-70
-<button onclick="addAtom('H')">⚪ Väte (H)</button>
-71
-<button onclick="addAtom('O')">🔴 Syre (O)</button>
-72
-<button onclick="addAtom('C')">⚫ Kol (C)</button>
-73
- 
-74
-<button onclick="checkSolution()">
-75
-✅ Kontrollera
-76
-</button>
-77
- 
-78
-<div id="message"></div>
-79
- 
-80
+  <h2>🧪 Bygg Molekylen</h2>
+  <p>Formel: <strong id="formula"></strong></p>
+  <p>Poäng: <span id="score">0</span></p>
+
+  <button onclick="addAtom('H')">Väte (H)</button>
+  <button onclick="addAtom('O')">Syre (O)</button>
+  <button onclick="addAtom('C')">Kol (C)</button>
+
+  <button onclick="checkSolution()">Kontrollera</button>
+  <div id="message"></div>
 </div>
-81
- 
-82
+
 <script type="module">
-83
- 
-84
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js";
-85
- 
-86
-import { OrbitControls }
-87
-from "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/controls/OrbitControls.js";
-88
- 
-89
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js';
+import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/controls/OrbitControls.js';
+
 const scene = new THREE.Scene();
-90
 scene.background = new THREE.Color(0x1e1e1e);
-91
- 
-92
-const camera = new THREE.PerspectiveCamera(
-93
-60,
-94
-window.innerWidth/window.innerHeight,
-95
-0.1,
-96
-1000
-97
-);
-98
- 
-99
+
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
 camera.position.set(0,2,8);
-100
- 
-101
-const renderer = new THREE.WebGLRenderer({
-102
-antialias:true
-103
-});
-104
- 
-105
-renderer.setSize(
-106
-window.innerWidth,
-107
-window.innerHeight
-108
-);
-109
- 
-110
+
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
-111
- 
-112
-const controls = new OrbitControls(
-113
-camera,
-114
-renderer.domElement
-115
-);
-116
- 
-117
+
+const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
-118
- 
-119
-scene.add(
-120
-new THREE.AmbientLight(0xffffff,1.5)
-121
-);
-122
- 
-123
-const light = new THREE.DirectionalLight(
-124
-0xffffff,
-125
-2
-126
-);
-127
- 
-128
+
+scene.add(new THREE.AmbientLight(0xffffff, 1.5));
+
+const light = new THREE.DirectionalLight(0xffffff, 2);
 light.position.set(5,5,5);
-129
- 
-130
 scene.add(light);
-131
- 
-132
-const moleculeList = [
-133
- 
-134
-{
-135
-formula:"H₂O",
-136
-atoms:{H:2,O:1}
-137
-},
-138
- 
-139
-{
-140
-formula:"CO₂",
-141
-atoms:{C:1,O:2}
-142
-},
-143
- 
-144
-{
-145
-formula:"CH₄",
-146
-atoms:{C:1,H:4}
-147
-},
-148
- 
-149
-{
-150
-formula:"O₂",
-151
-atoms:{O:2}
-152
-}
-153
- 
-154
+
+const molecules = [
+ {formula:'H₂O', atoms:{H:2,O:1}},
+ {formula:'CO₂', atoms:{C:1,O:2}},
+ {formula:'CH₄', atoms:{C:1,H:4}},
+ {formula:'O₂', atoms:{O:2}}
 ];
-155
- 
-156
-let currentMolecule;
-157
-let placedAtoms = [];
-158
+
+let current;
 let score = 0;
-159
- 
-160
-function atomColor(type){
-161
- 
-162
-return {
-163
-H:0xffffff,
-164
-O:0xff0000,
-165
-C:0x333333
-166
-}[type];
-167
- 
-168
+let atoms = [];
+
+function colorOf(type){
+ return {H:0xffffff,O:0xff0000,C:0x333333}[type];
 }
-169
- 
-170
-function atomSize(type){
-171
- 
-172
-return {
-173
-H:0.35,
-174
-O:0.55,
-175
-C:0.50
-176
-}[type];
-177
- 
-178
+
+function newTask(){
+ atoms.forEach(a=>scene.remove(a.mesh));
+ atoms=[];
+ current = molecules[Math.floor(Math.random()*molecules.length)];
+ document.getElementById('formula').textContent=current.formula;
+ document.getElementById('message').textContent='';
 }
-179
- 
-180
-function startNewTask(){
-181
- 
-182
-placedAtoms.forEach(atom=>{
-183
-scene.remove(atom.mesh);
-184
-});
-185
- 
-186
-placedAtoms=[];
-187
- 
-188
-currentMolecule =
-189
-moleculeList[
-190
-Math.floor(
-191
-Math.random()*moleculeList.length
-192
-)
-193
-];
-194
- 
-195
-document.getElementById("formula")
-196
-.textContent =
-197
-currentMolecule.formula;
-198
- 
-199
-document.getElementById("message")
-200
-.textContent = "";
-201
- 
-202
-}
-203
- 
-204
+
 window.addAtom = function(type){
-205
- 
-206
-const geometry =
-207
-new THREE.SphereGeometry(
-208
-atomSize(type),
-209
-32,
-210
-32
-211
-);
-212
- 
-213
-const material =
-214
-new THREE.MeshStandardMaterial({
-215
-color:atomColor(type)
-216
-});
-217
- 
-218
-const atom =
-219
-new THREE.Mesh(
-220
-geometry,
-221
-material
-222
-);
-223
- 
-224
-atom.position.set(
-225
-(Math.random()-0.5)*4,
-226
-(Math.random()-0.5)*4,
-227
-(Math.random()-0.5)*4
-228
-);
-229
- 
-230
-scene.add(atom);
-231
- 
-232
-placedAtoms.push({
-233
-type,
-234
-mesh:atom
-235
-});
-236
- 
-237
+ const mesh = new THREE.Mesh(
+   new THREE.SphereGeometry(0.5,32,32),
+   new THREE.MeshStandardMaterial({color:colorOf(type)})
+ );
+
+ mesh.position.set(
+  (Math.random()-0.5)*4,
+  (Math.random()-0.5)*4,
+  (Math.random()-0.5)*4
+ );
+
+ scene.add(mesh);
+ atoms.push({type,mesh});
 };
-238
- 
-239
+
 window.checkSolution = function(){
-240
- 
-241
-const count = {};
-242
- 
-243
-placedAtoms.forEach(atom=>{
-244
- 
-245
-count[atom.type] =
-246
-(count[atom.type]||0)+1;
-247
- 
-248
-});
-249
- 
-250
-let correct = true;
-251
- 
-252
-for(const element in currentMolecule.atoms){
-253
- 
-254
-if(
-255
-count[element] !==
-256
-currentMolecule.atoms[element]
-257
-){
-258
-correct = false;
-259
-}
-260
- 
-261
-}
-262
- 
-263
-if(
-264
-Object.keys(count).length !==
-265
-Object.keys(currentMolecule.atoms).length
-266
-){
-267
-correct = false;
-268
-}
-269
- 
-270
-const message =
-271
-document.getElementById("message");
-272
- 
-273
-if(correct){
-274
- 
-275
-score++;
-276
- 
-277
-document.getElementById("score")
-278
-.textContent = score;
-279
- 
-280
-message.innerHTML =
-281
-"✅ Rätt molekyl!";
-282
- 
-283
-setTimeout(()=>{
-284
-startNewTask();
-285
-},1500);
-286
- 
-287
-}
-288
-else{
-289
- 
-290
-message.innerHTML =
-291
-"❌ Fel antal atomer. Försök igen.";
-292
- 
-293
-}
-294
- 
-295
+ const count={};
+ atoms.forEach(a=>count[a.type]=(count[a.type]||0)+1);
+
+ let correct=true;
+
+ for(const k in current.atoms){
+   if(count[k]!==current.atoms[k]) correct=false;
+ }
+
+ if(Object.keys(count).length!==Object.keys(current.atoms).length){
+   correct=false;
+ }
+
+ if(correct){
+   score++;
+   document.getElementById('score').textContent=score;
+   document.getElementById('message').textContent='✅ Rätt molekyl!';
+   setTimeout(newTask,1500);
+ } else {
+   document.getElementById('message').textContent='❌ Försök igen';
+ }
 };
-296
- 
-297
+
 function animate(){
-298
- 
-299
-requestAnimationFrame(animate);
-300
- 
-301
-controls.update();
-302
- 
-303
-renderer.render(
-304
-scene,
-305
-camera
-306
-);
-307
- 
-308
+ requestAnimationFrame(animate);
+ controls.update();
+ renderer.render(scene,camera);
 }
-309
- 
-310
+
 animate();
-311
- 
-312
-startNewTask();
-313
- 
-314
-window.addEventListener(
-315
-"resize",
-316
-()=>{
-317
- 
-318
-camera.aspect =
-319
-window.innerWidth /
-320
-window.innerHeight;
-321
- 
-322
-camera.updateProjectionMatrix();
-323
- 
-324
-renderer.setSize(
-325
-window.innerWidth,
-326
-window.innerHeight
-327
-);
-328
- 
-329
-}
-330
-);
-331
- 
-332
+newTask();
 </script>
-333
- 
-334
 </body>
-335
 </html>
