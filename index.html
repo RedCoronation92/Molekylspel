@@ -25,6 +25,7 @@ button{width:100%;padding:12px;margin:5px 0;border:none;border-radius:8px;font-s
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://net/npm/three@0.128.0/examples/js/controls/DragControls.js"></script>
 <script>
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x202020);
@@ -48,96 +49,114 @@ const grid=new THREE.GridHelper(20,20);
 scene.add(grid);
 
 const raycaster=new THREE.Raycaster();
-const mouse=new THREE.Vector2();
-const dragPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
-
-let dragObject=null;
 let atoms=[];
 
 function atomColor(type){
-return {H:0xffffff,O:0xff0000,C:0x333333}[type];
+  return {
+    H:0xffffff,
+    O:0xff0000,
+    C:0x333333
+  }[type];
 }
 
 function addAtom(type){
-const mesh=new THREE.Mesh(
-new THREE.SphereGeometry(0.4,32,32),
-new THREE.MeshStandardMaterial({color:atomColor(type)})
-);
-mesh.position.set((Math.random()-0.5)*4,0.4,(Math.random()-0.5)*4);
-mesh.userData.type=type;
-scene.add(mesh);
-atoms.push(mesh);
+
+  const mesh=new THREE.Mesh(
+    new THREE.SphereGeometry(0.4,32,32),
+    new THREE.MeshStandardMaterial({
+      color:atomColor(type)
+    })
+  );
+
+  mesh.position.set(
+    (Math.random()-0.5)*4,
+    0.4,
+    (Math.random()-0.5)*4
+  );
+
+  scene.add(mesh);
+  atoms.push(mesh);
+
+  createDragControls();
 }
 
 window.addAtom=addAtom;
 
-function pointer(event){
-const e=event.touches ? event.touches[0] : event;
-mouse.x=(e.clientX/window.innerWidth)*2-1;
-mouse.y=-(e.clientY/window.innerHeight)*2+1;
-return e;
+let dragControls;
+
+function createDragControls(){
+
+  if(dragControls){
+    dragControls.deactivate();
+    dragControls.dispose();
+  }
+
+  dragControls =
+    new THREE.DragControls(
+      atoms,
+      camera,
+      renderer.domElement
+    );
+
+  dragControls.addEventListener(
+    'dragstart',
+    function(){
+      controls.enabled=false;
+    }
+  );
+
+  dragControls.addEventListener(
+    'drag',
+    function(event){
+
+      event.object.position.y = 0.4;
+
+    }
+  );
+
+  dragControls.addEventListener(
+    'dragend',
+    function(event){
+
+      controls.enabled=true;
+
+      const trash =
+        document
+        .getElementById('trash')
+        .getBoundingClientRect();
+
+      const vector =
+        event.object.position.clone();
+
+      vector.project(camera);
+
+      const screenX =
+        ((vector.x+1)/2)
+        * window.innerWidth;
+
+      const screenY =
+        ((-vector.y+1)/2)
+        * window.innerHeight;
+
+      if(
+        screenX > trash.left &&
+        screenX < trash.right &&
+        screenY > trash.top &&
+        screenY < trash.bottom
+      ){
+
+        scene.remove(event.object);
+
+        atoms =
+          atoms.filter(
+            a => a !== event.object
+          );
+
+        createDragControls();
+      }
+    }
+  );
 }
-
-function startDrag(event){
-
-const e = event.touches ? event.touches[0] : event;
-
-mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-
-raycaster.setFromCamera(mouse,camera);
-
-const intersects = raycaster.intersectObjects(atoms,false);
-
-if(intersects.length > 0){
-
-    dragObject = intersects[0].object;
-
-    console.log("Vald atom",dragObject);
-
-    controls.enabled = false;
-}
-}
-
-function moveDrag(event){
-if(!dragObject) return;
-
-pointer(event);
-raycaster.setFromCamera(mouse,camera);
-
-const pos=new THREE.Vector3();
-raycaster.ray.intersectPlane(dragPlane,pos);
-
-if(pos){
- dragObject.position.set(pos.x,0.4,pos.z);
-}
-}
-
-function endDrag(event){
-if(!dragObject){
- controls.enabled=true;
- return;
-}
-
-const e=event.changedTouches ? event.changedTouches[0] : event;
-const trash=document.getElementById('trash').getBoundingClientRect();
-
-if(
- e.clientX>trash.left &&
- e.clientX<trash.right &&
- e.clientY>trash.top &&
- e.clientY<trash.bottom
-){
- scene.remove(dragObject);
- atoms=atoms.filter(a=>a!==dragObject);
-}
-
- dragObject=null;
- controls.enabled=true;
-}
-
-renderer.domElement.addEventListener('mousedown',startDrag);
-renderer.domElement.addEventListener('mousemove',moveDrag);
 window.addEventListener('mouseup',endDrag);
 
 renderer.domElement.addEventListener('touchstart',startDrag,{passive:true});
