@@ -79,6 +79,9 @@ return e;
 }
 
 function startDrag(event){
+console.log("Start drag");
+const hit=raycaster.intersectObjects(atoms);
+console.log(hit);
 pointer(event);
 raycaster.setFromCamera(mouse,camera);
 const hit=raycaster.intersectObjects(atoms);
