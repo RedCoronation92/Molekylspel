@@ -358,7 +358,9 @@ window.addEventListener(
 
     }
 );
-
+renderer.domElement.addEventListener("click", function(){
+    console.log("Canvas klickad");
+});
 function animate(){
 
     requestAnimationFrame(
