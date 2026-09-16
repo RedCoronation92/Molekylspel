@@ -2,180 +2,364 @@
 <html lang="sv">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Molekylspel - Drag & Drop</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Molekylspel</title>
+
 <style>
-body{margin:0;overflow:hidden;background:#202020;font-family:Arial;color:white}
-#ui{position:fixed;top:10px;left:10px;z-index:20;background:rgba(0,0,0,.85);padding:15px;border-radius:12px;width:280px}
-button{width:100%;padding:12px;margin:5px 0;border:none;border-radius:8px;font-size:16px}
-#trash{position:fixed;right:20px;bottom:20px;width:100px;height:100px;border-radius:18px;background:#b00000;display:flex;align-items:center;justify-content:center;font-size:48px;z-index:20}
+html,body{
+    margin:0;
+    overflow:hidden;
+    font-family:Arial,sans-serif;
+    background:#222;
+    color:white;
+}
+
+#ui{
+    position:fixed;
+    left:10px;
+    top:10px;
+    width:280px;
+    padding:15px;
+    border-radius:12px;
+    background:rgba(0,0,0,.85);
+    z-index:100;
+}
+
+button{
+    width:100%;
+    padding:12px;
+    margin:5px 0;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:16px;
+}
+
+#trash{
+    position:fixed;
+    right:20px;
+    bottom:20px;
+    width:100px;
+    height:100px;
+    background:#b00000;
+    border-radius:16px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:50px;
+    z-index:100;
+}
+
+canvas{
+    display:block;
+}
 </style>
 </head>
 <body>
 
 <div id="ui">
-<h2>Drag & Drop-test</h2>
-<button onclick="addAtom('H')">Väte</button>
-<button onclick="addAtom('O')">Syre</button>
-<button onclick="addAtom('C')">Kol</button>
-<p>Dra atomer med mus eller finger.</p>
+    <h2>🧪 Molekylspel</h2>
+
+    <button onclick="addAtom('H')">Väte (H)</button>
+    <button onclick="addAtom('O')">Syre (O)</button>
+    <button onclick="addAtom('C')">Kol (C)</button>
+
+    <p>Skapa en atom och försök dra den.</p>
 </div>
 
 <div id="trash">🗑️</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://net/npm/three@0.128.0/examples/js/controls/DragControls.js"></script>
-<script>
-const scene=new THREE.Scene();
-scene.background=new THREE.Color(0x202020);
 
-const camera=new THREE.PerspectiveCamera(60,window.innerWidth/window.innerHeight,0.1,1000);
+<script>
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x222222);
+
+const camera = new THREE.PerspectiveCamera(
+    60,
+    window.innerWidth/window.innerHeight,
+    0.1,
+    1000
+);
+
 camera.position.set(0,5,8);
 
-const renderer=new THREE.WebGLRenderer({antialias:true});
-renderer.setSize(window.innerWidth,window.innerHeight);
-document.body.appendChild(renderer.domElement);
+const renderer = new THREE.WebGLRenderer({
+    antialias:true
+});
 
-const controls=new THREE.OrbitControls(camera,renderer.domElement);
-controls.enableDamping=true;
+renderer.setSize(
+    window.innerWidth,
+    window.innerHeight
+);
 
-scene.add(new THREE.AmbientLight(0xffffff,1.5));
-const light=new THREE.DirectionalLight(0xffffff,1.5);
-light.position.set(5,10,5);
+document.body.appendChild(
+    renderer.domElement
+);
+
+const controls =
+new THREE.OrbitControls(
+    camera,
+    renderer.domElement
+);
+
+controls.enableDamping = true;
+
+scene.add(
+    new THREE.AmbientLight(
+        0xffffff,
+        1.5
+    )
+);
+
+const light =
+new THREE.DirectionalLight(
+    0xffffff,
+    2
+);
+
+light.position.set(
+    5,
+    10,
+    5
+);
+
 scene.add(light);
 
-const grid=new THREE.GridHelper(20,20);
-scene.add(grid);
+scene.add(
+    new THREE.GridHelper(
+        20,
+        20
+    )
+);
 
-const raycaster=new THREE.Raycaster();
-let atoms=[];
+const atoms = [];
 
 function atomColor(type){
-  return {
-    H:0xffffff,
-    O:0xff0000,
-    C:0x333333
-  }[type];
+
+    return {
+        H:0xffffff,
+        O:0xff0000,
+        C:0x333333
+    }[type];
+
 }
 
 function addAtom(type){
 
-  const mesh=new THREE.Mesh(
-    new THREE.SphereGeometry(0.4,32,32),
-    new THREE.MeshStandardMaterial({
-      color:atomColor(type)
-    })
-  );
-
-  mesh.position.set(
-    (Math.random()-0.5)*4,
-    0.4,
-    (Math.random()-0.5)*4
-  );
-
-  scene.add(mesh);
-  atoms.push(mesh);
-
-  createDragControls();
-}
-
-window.addAtom=addAtom;
-
-let dragControls;
-
-function createDragControls(){
-
-  if(dragControls){
-    dragControls.deactivate();
-    dragControls.dispose();
-  }
-
-  dragControls =
-    new THREE.DragControls(
-      atoms,
-      camera,
-      renderer.domElement
+    const atom =
+    new THREE.Mesh(
+        new THREE.SphereGeometry(
+            0.4,
+            32,
+            32
+        ),
+        new THREE.MeshStandardMaterial({
+            color:atomColor(type)
+        })
     );
 
-  dragControls.addEventListener(
-    'dragstart',
-    function(){
-      controls.enabled=false;
-    }
-  );
+    atom.position.set(
+        (Math.random()-0.5)*4,
+        0.4,
+        (Math.random()-0.5)*4
+    );
 
-  dragControls.addEventListener(
-    'drag',
-    function(event){
+    atom.userData.type = type;
 
-      event.object.position.y = 0.4;
+    scene.add(atom);
 
-    }
-  );
-
-  dragControls.addEventListener(
-    'dragend',
-    function(event){
-
-      controls.enabled=true;
-
-      const trash =
-        document
-        .getElementById('trash')
-        .getBoundingClientRect();
-
-      const vector =
-        event.object.position.clone();
-
-      vector.project(camera);
-
-      const screenX =
-        ((vector.x+1)/2)
-        * window.innerWidth;
-
-      const screenY =
-        ((-vector.y+1)/2)
-        * window.innerHeight;
-
-      if(
-        screenX > trash.left &&
-        screenX < trash.right &&
-        screenY > trash.top &&
-        screenY < trash.bottom
-      ){
-
-        scene.remove(event.object);
-
-        atoms =
-          atoms.filter(
-            a => a !== event.object
-          );
-
-        createDragControls();
-      }
-    }
-  );
+    atoms.push(atom);
 }
-window.addEventListener('mouseup',endDrag);
 
-renderer.domElement.addEventListener('touchstart',startDrag,{passive:true});
-renderer.domElement.addEventListener('touchmove',moveDrag,{passive:true});
-window.addEventListener('touchend',endDrag);
+window.addAtom = addAtom;
 
-window.addEventListener('resize',()=>{
- camera.aspect=window.innerWidth/window.innerHeight;
- camera.updateProjectionMatrix();
- renderer.setSize(window.innerWidth,window.innerHeight);
-});
+const raycaster =
+new THREE.Raycaster();
+
+const mouse =
+new THREE.Vector2();
+
+let selected = null;
+
+function getPointer(event){
+
+    const e =
+    event.touches ?
+    event.touches[0] :
+    event;
+
+    mouse.x =
+    (e.clientX/window.innerWidth)*2-1;
+
+    mouse.y =
+    -(e.clientY/window.innerHeight)*2+1;
+
+    return e;
+}
+
+function pointerDown(event){
+
+    getPointer(event);
+
+    raycaster.setFromCamera(
+        mouse,
+        camera
+    );
+
+    const hit =
+    raycaster.intersectObjects(atoms);
+
+    if(hit.length){
+
+        selected = hit[0].object;
+
+        controls.enabled = false;
+    }
+}
+
+function pointerMove(event){
+
+    if(!selected) return;
+
+    getPointer(event);
+
+    raycaster.setFromCamera(
+        mouse,
+        camera
+    );
+
+    const plane =
+    new THREE.Plane(
+        new THREE.Vector3(
+            0,
+            1,
+            0
+        ),
+        -0.4
+    );
+
+    const point =
+    new THREE.Vector3();
+
+    raycaster.ray.intersectPlane(
+        plane,
+        point
+    );
+
+    selected.position.x = point.x;
+    selected.position.z = point.z;
+}
+
+function pointerUp(event){
+
+    if(!selected){
+
+        controls.enabled = true;
+
+        return;
+    }
+
+    const e =
+    event.changedTouches ?
+    event.changedTouches[0] :
+    event;
+
+    const trash =
+    document
+    .getElementById("trash")
+    .getBoundingClientRect();
+
+    if(
+        e.clientX > trash.left &&
+        e.clientX < trash.right &&
+        e.clientY > trash.top &&
+        e.clientY < trash.bottom
+    ){
+
+        scene.remove(selected);
+
+        const index =
+        atoms.indexOf(selected);
+
+        if(index !== -1){
+
+            atoms.splice(index,1);
+        }
+    }
+
+    selected = null;
+
+    controls.enabled = true;
+}
+
+renderer.domElement.addEventListener(
+    "mousedown",
+    pointerDown
+);
+
+renderer.domElement.addEventListener(
+    "mousemove",
+    pointerMove
+);
+
+window.addEventListener(
+    "mouseup",
+    pointerUp
+);
+
+renderer.domElement.addEventListener(
+    "touchstart",
+    pointerDown
+);
+
+renderer.domElement.addEventListener(
+    "touchmove",
+    pointerMove
+);
+
+window.addEventListener(
+    "touchend",
+    pointerUp
+);
+
+window.addEventListener(
+    "resize",
+    ()=>{
+
+        camera.aspect =
+        window.innerWidth /
+        window.innerHeight;
+
+        camera.updateProjectionMatrix();
+
+        renderer.setSize(
+            window.innerWidth,
+            window.innerHeight
+        );
+
+    }
+);
 
 function animate(){
- requestAnimationFrame(animate);
- controls.update();
- renderer.render(scene,camera);
+
+    requestAnimationFrame(
+        animate
+    );
+
+    controls.update();
+
+    renderer.render(
+        scene,
+        camera
+    );
 }
 
 animate();
+
 </script>
+
 </body>
 </html>
